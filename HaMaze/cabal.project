@@ -1,0 +1,6 @@
+packages:
+    MazeLib/
+    
+
+tests: True
+optimization: False
