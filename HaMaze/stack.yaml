@@ -33,6 +33,7 @@ packages:
 - MazeLib/
 - Util/
 - WinLib/
+- WinApp/
 #- App/
 #- UtilLib/
 #- WinLib/

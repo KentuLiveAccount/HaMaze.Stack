@@ -2,6 +2,7 @@ packages:
     MazeLib/
     Util/
     WinLib/
+    WinApp/
     
 
 tests: True
