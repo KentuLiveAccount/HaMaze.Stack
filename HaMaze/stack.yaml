@@ -31,6 +31,8 @@ resolver:
 #   - wai
 packages:
 - MazeLib/
+- Util/
+- WinLib/
 #- App/
 #- UtilLib/
 #- WinLib/

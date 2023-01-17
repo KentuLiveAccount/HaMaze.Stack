@@ -1,5 +1,7 @@
 packages:
     MazeLib/
+    Util/
+    WinLib/
     
 
 tests: True
