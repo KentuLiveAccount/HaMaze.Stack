@@ -3,7 +3,7 @@ packages:
     Util/
     WinLib/
     WinApp/
-    
+    OpenGLApp/
 
 tests: True
 optimization: False
