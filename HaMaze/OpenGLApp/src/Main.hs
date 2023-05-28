@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternSynonyms #-}
+
 module Main (main) where
 
 import Graphics.UI.GLUT
@@ -10,9 +12,6 @@ import System.Random
 import System.Random.Stateful
 import Control.Monad (replicateM)
 
-goal :: (Int, Int)
-
-paths :: [(Int, Int)]
 
 origin :: (Int, Int)
 origin = (1, 1)
@@ -30,10 +29,12 @@ randSeq :: [Int]
 randSeq =
     let rollsM :: StatefulGen g m => Int -> g -> m [Int]
         rollsM n = replicateM n . uniformRM (0, 5)
-        pureGen = mkStdGen 191
+        pureGen = mkStdGen 349
     in
         runStateGen_ pureGen (rollsM 10) :: [Int]
 
+goal :: (Int, Int)
+paths :: [(Int, Int)]
 --(paths, goal)  = mazeGen (sz, sz) (1, 1) (cycle [0..5])
 (paths, goal)  = mazeGen (sz, sz) origin (cycle (randSeq))
 
@@ -60,6 +61,14 @@ divisor = fromIntegral sz
 dxy :: GLfloat
 dxy = 0.9 * (2.0 / divisor) - (2.0 / (divisor * 10.0))
 
+pattern OneAndThree x y <- (x, (z, y))
+
+pattern OneAndThreeBi x y = (x, (0, y))
+
+testonethree (OneAndThree x y) = x + y
+
+test :: IO ()
+test = print $ testonethree $ OneAndThreeBi 1 4
 
 
 myPoints :: (GLfloat, GLfloat, GLfloat) -> [(Int, Int)] -> [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]
@@ -98,7 +107,7 @@ main = do
   (_progName, _args) <- getArgsAndInitialize
   stateRef <- newIORef initialAppState
   initialDisplayMode $= [DoubleBuffered]
-  _window <- createWindow "Hello World"
+  _window <- createWindow "GLApp"
   displayCallback $= (display stateRef)
   addTimerCallback 16 (timerProc stateRef)
   mainLoop
