@@ -13,9 +13,10 @@ import System.Random.Stateful
 import Control.Monad (replicateM)
 
 
-x = 1
-s = 2
-g = 3
+x = 1 -- wall
+s = 2 -- starting point
+g = 3 -- goal
+
 mz :: [[Int]]
 mz = [
     [x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x],
