@@ -12,6 +12,9 @@ import System.Random
 import System.Random.Stateful
 import Control.Monad (replicateM)
 
+{-
+  TODO: update maze after completion (convert ob from constant to function)
+-}
 
 origin :: (Int, Int)
 origin = (1, 1)
@@ -22,9 +25,6 @@ sz = 40
 sBounds :: Bounds
 sBounds = (sz, sz) -- iStart + cWidth
 
-moves' :: [(Int, Int)]
-moves' = [(-1, 0), (0, -1), (1, 0), (0, 1)] -- no diagonal
-
 randSeq :: [Int]
 randSeq =
     let rollsM :: StatefulGen g m => Int -> g -> m [Int]
@@ -33,16 +33,10 @@ randSeq =
     in
         runStateGen_ pureGen (rollsM 10) :: [Int]
 
-goal :: (Int, Int)
-paths :: [(Int, Int)]
---(paths, goal)  = mazeGen (sz, sz) (1, 1) (cycle [0..5])
-(paths, goal)  = mazeGen (sz, sz) origin (cycle (randSeq))
-
-ob :: [(Int, Int)]
-ob = filter (not . (\x -> elem x paths)) [(x, y) | x <- [0..(sz - 1)], y <- [0..(sz - 1)]]
+mazeSpace = mazeGen (sz, sz) origin (cycle (randSeq))
 
 solutionPath :: Maybe [(Int, Int)]
-solutionPath = solvePath (InputSpace sBounds ob moves') origin goal
+solutionPath = solvePath mazeSpace 
 
 obstacleColor :: (GLfloat,GLfloat,GLfloat)
 obstacleColor = (0, 0.5, 0.5)
@@ -65,21 +59,13 @@ pattern OneAndThree x y <- (x, (z, y))
 
 pattern OneAndThreeBi x y = (x, (0, y))
 
-testonethree (OneAndThree x y) = x + y
-
-test :: IO ()
-test = print $ testonethree $ OneAndThreeBi 1 4
-
-
 myPoints :: (GLfloat, GLfloat, GLfloat) -> [(Int, Int)] -> [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]
 myPoints c pts =  map (\(x, y) -> (scale x, scale y * (-1.0), 0.0, c)) pts
   where
     scale x = 0.9 * ((((fromIntegral x) * 2.0) / divisor) - 1.0)
 
-stationaries :: [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]
-stationaries = (myPoints startColor [origin]) ++ (myPoints endColor [goal]) ++ (myPoints obstacleColor ob)
-
-
+stationaries :: InputSpace -> [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]
+stationaries is = (myPoints startColor [isOrigin is]) ++ (myPoints endColor [isGoal is]) ++ (myPoints obstacleColor $ isObstacles is)
 
 toRect :: (GLfloat,GLfloat,GLfloat) -> [(GLfloat,GLfloat,GLfloat)]
 toRect (x, y, z) = [(x, y, z), (x + dxy, y, z), (x + dxy, y + dxy, z), (x, y + dxy, z)]
@@ -103,7 +89,7 @@ nextAppState (AS st to) = (AS st' to)
 
 main :: IO ()
 main = do
-  print $ myPoints (1, 0, 0) ob
+  print $ myPoints (1, 0, 0) (isObstacles mazeSpace)
   (_progName, _args) <- getArgsAndInitialize
   stateRef <- newIORef initialAppState
   initialDisplayMode $= [DoubleBuffered]
@@ -126,7 +112,7 @@ display ior = do
     scale 0.8 0.8 (0.8::GLfloat)
     -- renderPrimitive :: PrimitiveMode -> IO a -> IO a
     mapM_ (\pts -> renderPrimitive Quads $ mapM_ rectVertex (myPoints pathColor (take dl pts))) solutionPath
-    renderPrimitive Quads $ mapM_ rectVertex stationaries)
+    renderPrimitive Quads $ mapM_ rectVertex $ stationaries mazeSpace)
   swapBuffers
 
 timerProc :: IORef AppState -> IO ()

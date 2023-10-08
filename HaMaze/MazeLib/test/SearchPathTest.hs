@@ -27,6 +27,6 @@ sBounds = (6, 6) -- iStart + cWidth
 moves' :: [(Int, Int)]
 moves' = [(-1, 0), (0, -1), (1, 0), (0, 1)] -- no diagonal
 
-sampleMap = InputSpace sBounds obstacles' moves'
+sampleMap = InputSpace sBounds obstacles' moves' origin goal
 
-testSearchPath = print $ solvePath sampleMap origin goal
+testSearchPath = print $ solvePath sampleMap 

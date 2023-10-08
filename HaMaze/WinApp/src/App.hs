@@ -17,39 +17,15 @@ x = 1 -- wall
 s = 2 -- starting point
 g = 3 -- goal
 
-mz :: [[Int]]
-mz = [
-    [x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x],
-    [x,s,x,0,0,0,x,0,x,0,0,0,0,0,0,0,x,0,0,0,x],
-    [x,0,x,0,x,0,x,0,x,0,x,0,x,x,x,0,x,x,x,0,x],
-    [x,0,0,0,x,0,x,0,0,0,x,0,x,0,x,0,0,0,0,0,x],
-    [x,x,x,x,x,0,x,x,x,x,x,0,x,0,x,x,x,x,x,0,x],
-    [x,0,0,0,x,0,0,0,0,0,0,0,x,0,0,0,0,0,x,0,x],
-    [x,0,x,0,x,x,x,x,x,x,x,x,x,0,x,0,x,x,x,0,x],
-    [x,0,x,0,x,0,0,0,0,0,0,0,0,0,x,0,x,0,0,0,x],
-    [x,0,x,0,x,0,x,x,x,x,x,0,x,0,x,0,x,0,x,x,x],
-    [x,0,x,0,x,0,x,0,0,0,x,0,x,0,x,0,0,0,x,0,x],
-    [x,0,x,0,0,0,x,0,0,0,x,0,x,0,x,x,x,x,x,0,x],
-    [x,0,x,x,x,x,x,x,x,0,x,0,x,0,0,0,x,0,0,0,x],
-    [x,0,x,0,0,0,0,0,0,0,x,0,x,0,x,0,x,0,0,0,x],
-    [x,0,x,x,x,x,x,0,x,0,x,0,x,x,x,0,x,x,x,0,x],
-    [x,0,0,0,0,0,x,0,x,x,x,0,0,0,x,0,0,0,x,0,x],
-    [x,x,x,x,x,0,x,0,0,0,0,0,x,x,x,x,x,0,x,0,x],
-    [x,0,0,0,x,0,x,x,x,x,x,0,x,0,0,0,0,0,x,0,x],
-    [x,0,x,0,x,0,x,0,0,0,x,0,x,0,x,x,x,x,x,0,x],
-    [x,0,x,0,0,0,x,0,x,0,x,0,x,0,0,0,0,0,x,0,x],
-    [x,0,x,x,x,x,x,0,x,0,x,x,x,x,x,x,x,0,x,0,x],
-    [x,0,0,0,0,0,0,0,x,0,0,0,0,0,0,0,0,0,0,g,x],
-    [x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x]]
 
-goal :: (Int, Int)
-
-paths :: [(Int, Int)]
---ob = map snd $ filter (\(v, _) -> v == x) $ concat $ zipWith (\y (xs) -> zipWith (\x p -> (p, (x, y))) [0..] xs) [0..] mz
---goal = (19, 20)
+origin :: (Int, Int)
+origin = (1, 1)
 
 sz :: Int
 sz = 40   
+
+sBounds :: Bounds
+sBounds = (sz, sz) -- iStart + cWidth
 
 randSeq :: [Int]
 randSeq =
@@ -59,39 +35,23 @@ randSeq =
     in
         runStateGen_ pureGen (rollsM 10) :: [Int]
 
---(paths, goal)  = mazeGen (sz, sz) (1, 1) (cycle [0..5])
-(paths, goal)  = mazeGen (sz, sz) (1, 1) (cycle randSeq)
-
-ob :: [(Int, Int)]
-ob = filter (not . (\x -> elem x paths)) [(x, y) | x <- [0..(sz - 1)], y <- [0..(sz - 1)]]
-
-obstacles' :: [(Int, Int)]
---obstacles' = [(0, 5), (5, 1), (1, 4), (2, 2), (2, 3), (4, 4)]
-obstacles' = [(0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 3), (4, 3), (3, 3), (2, 3), (1, 3), (1, 4), (3, 5)]
-
-origin :: (Int, Int)
-origin = (1, 1)
-
-
-sBounds :: Bounds
-sBounds = (sz, sz) -- iStart + cWidth
-
-moves' :: [(Int, Int)]
-moves' = [(-1, 0), (0, -1), (1, 0), (0, 1)] -- no diagonal
-
-sampleMap = InputSpace sBounds ob moves'
+sampleMap :: InputSpace
+sampleMap = mazeGen sBounds origin (cycle randSeq)
 
 obstacleColor = rgb 0x00 0x88 0x88
 pathColor = rgb 0xff 0x0 0x0
 startColor = rgb 0x00 0xff 0x00
 endColor = rgb 0x00 0x00 0xff
 
-obstackleCol = (addColor startColor origin) : (addColor endColor goal) : (map (addColor obstacleColor) ob)
 
 type MyAppState = AppState (Maybe [(Int, Int)])
 
 initialState :: MyAppState
-initialState = (emptyState (solvePath sampleMap origin goal)) {blocks = obstackleCol, initialSize = (600, 600), transformer = updateAppState}
+initialState = (emptyState $ solvePath sampleMap) {blocks = obstackleCol, initialSize = (600, 600), transformer = updateAppState}
+    where
+        obstackleCol = (addColor startColor origin) : (addColor endColor goal) : (map (addColor obstacleColor) ob)
+        goal = isGoal sampleMap
+        ob   = isObstacles sampleMap
 
 nxt :: [(Int, Int, COLORREF)] -> Maybe [(Int, Int)] -> ([(Int, Int, COLORREF)], Maybe [(Int, Int)])
 nxt bls Nothing = (bls, Nothing)
@@ -108,5 +68,5 @@ updateAppState as = let
          --(as {blocks = nextBlocks (cx, cy) (blocks as)}, [windowRect as])
 
 main = do
-    print $ solvePath sampleMap origin goal
+    print $ solvePath sampleMap
     startApp initialState

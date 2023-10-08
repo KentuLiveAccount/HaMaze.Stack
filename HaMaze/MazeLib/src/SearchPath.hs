@@ -10,7 +10,7 @@ import MazeTypes
 type SearchSpace = (Bounds, IArray.Array Int Int, [PointDelta])
 
 searchSpaceFromInputSpace :: InputSpace -> SearchSpace
-searchSpaceFromInputSpace is@(InputSpace bds obs mvs) = (bds, accumArray (+) 0 (0, area bds) $ map (\x -> (coordToIdx bds x, -1)) obs, mvs)
+searchSpaceFromInputSpace is@(InputSpace bds obs mvs _ _) = (bds, accumArray (+) 0 (0, area bds) $ map (\x -> (coordToIdx bds x, -1)) obs, mvs)
 
 area :: Bounds -> Int
 area (dx, dy) = dx * dy
@@ -62,5 +62,9 @@ findPath  start end path bsp@(sBounds, sp, _)
         end' = if (elem start ends) then start else (head ends)
         vend = sp!(coordToIdx sBounds end)
 
-solvePath :: InputSpace -> (Int, Int) -> (Int, Int) -> Maybe [(Int, Int)]
-solvePath is origin goal = (findPath origin goal []) =<< propagateCost (searchSpaceFromInputSpace is) [origin] goal 1
+solvePath :: InputSpace -> Maybe [(Int, Int)]
+solvePath is = (findPath orig gl []) =<< propagateCost (searchSpaceFromInputSpace is) [orig] gl 1
+    where  
+        orig = (isOrigin is)
+        gl   = (isGoal is)
+    
