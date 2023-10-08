@@ -76,14 +76,14 @@ buildMaze (BS bds path@(p:ath) spread mD g) i (r:nds) =
         Just next -> buildMaze (BS bds (next:path) (includePl spread next) (max mD i) (if mD < i then next else g) ) (i + 1) nds
         Nothing   -> buildMaze (BS bds ath spread mD g) (i - 1) nds
 
-_mazeGen :: (Int, Int) -> (Int, Int) -> [Int] -> ([(Int, Int)], (Int, Int))
-_mazeGen bounds start rnd = (Set.elems sp, g)
-    where
-        (BS _ _ sp _ g) =  buildMaze (BS bounds [start] (includePl emptyPl start)  0 start) 0 rnd
-
+-- bounds :: shows the size of maze space
+-- start :: starting poistion in the maze
+-- rnd   :: sequence of random numbers. turned into loop and used repeatedly
+-- returns (list of points that makes up the paths, goal position)
 mazeGen :: (Int, Int) -> (Int, Int) -> [Int] -> InputSpace
 mazeGen bounds@(bx, by) start rnd = (InputSpace bounds ob moves start gl)
     where
-        (paths, gl) = _mazeGen bounds start (cycle (rnd))
+        -- paths is the "walkable" part of the maze. ob(stacles) will be the negative of that
         ob :: [(Int, Int)]
         ob = filter (not . (\x -> elem x paths)) [(x, y) | x <- [0..(bx - 1)], y <- [0..(by - 1)]]
+        (BS _ _ paths _ gl) =  buildMaze (BS bounds [start] (includePl emptyPl start)  0 start) 0 (cycle (rnd))

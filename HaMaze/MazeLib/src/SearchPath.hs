@@ -6,6 +6,10 @@ import Data.Ord
 import Data.List (minimumBy)
 import MazeTypes
 
+{-
+    TODO: documentation
+-}
+
 
 type SearchSpace = (Bounds, IArray.Array Int Int, [PointDelta])
 

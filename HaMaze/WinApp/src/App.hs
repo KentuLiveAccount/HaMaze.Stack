@@ -12,12 +12,6 @@ import System.Random
 import System.Random.Stateful
 import Control.Monad (replicateM)
 
-
-x = 1 -- wall
-s = 2 -- starting point
-g = 3 -- goal
-
-
 origin :: (Int, Int)
 origin = (1, 1)
 
@@ -25,7 +19,7 @@ sz :: Int
 sz = 40   
 
 sBounds :: Bounds
-sBounds = (sz, sz) -- iStart + cWidth
+sBounds = (sz, sz)
 
 randSeq :: [Int]
 randSeq =
@@ -33,16 +27,15 @@ randSeq =
         rollsM n = replicateM n . uniformRM (0, 5)
         pureGen = mkStdGen 137
     in
-        runStateGen_ pureGen (rollsM 10) :: [Int]
+        runStateGen_ pureGen (rollsM 13) :: [Int]
 
 sampleMap :: InputSpace
 sampleMap = mazeGen sBounds origin (cycle randSeq)
 
 obstacleColor = rgb 0x00 0x88 0x88
-pathColor = rgb 0xff 0x0 0x0
-startColor = rgb 0x00 0xff 0x00
-endColor = rgb 0x00 0x00 0xff
-
+pathColor     = rgb 0xff 0x00 0x00
+startColor    = rgb 0x00 0xff 0x00
+endColor      = rgb 0x00 0x00 0xff
 
 type MyAppState = AppState (Maybe [(Int, Int)])
 
