@@ -33,13 +33,9 @@ randSeq =
     in
         runStateGen_ pureGen (rollsM 10) :: [Int]
 
-mazeSpace = mazeGen (sz, sz) origin (cycle (randSeq))
-
-solutionPath :: Maybe [(Int, Int)]
-solutionPath = solvePath mazeSpace 
-
 obstacleColor :: (GLfloat,GLfloat,GLfloat)
 obstacleColor = (0, 0.5, 0.5)
+
 pathColor :: (GLfloat,GLfloat,GLfloat)
 pathColor = (1.0, 0, 0)
 
@@ -55,24 +51,29 @@ divisor = fromIntegral sz
 dxy :: GLfloat
 dxy = 0.9 * (2.0 / divisor) - (2.0 / (divisor * 10.0))
 
-pattern OneAndThree x y <- (x, (z, y))
-
-pattern OneAndThreeBi x y = (x, (0, y))
-
-myPoints :: (GLfloat, GLfloat, GLfloat) -> [(Int, Int)] -> [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]
-myPoints c pts =  map (\(x, y) -> (scale x, scale y * (-1.0), 0.0, c)) pts
-  where
-    scale x = 0.9 * ((((fromIntegral x) * 2.0) / divisor) - 1.0)
-
-stationaries :: InputSpace -> [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]
-stationaries is = (myPoints startColor [isOrigin is]) ++ (myPoints endColor [isGoal is]) ++ (myPoints obstacleColor $ isObstacles is)
-
 toRect :: (GLfloat,GLfloat,GLfloat) -> [(GLfloat,GLfloat,GLfloat)]
 toRect (x, y, z) = [(x, y, z), (x + dxy, y, z), (x + dxy, y + dxy, z), (x, y + dxy, z)]
 
 rectVertex :: (GLfloat,GLfloat,GLfloat, (GLfloat,GLfloat,GLfloat)) -> IO ()
 rectVertex (x, y, z, c) = mapM_ (\(x, y, z) ->
   (setColor c) >> vertex (Vertex3 x y z)) $ toRect (x, y, z)
+
+myPoints :: (GLfloat, GLfloat, GLfloat) -> [(Int, Int)] -> [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]
+myPoints c pts =  map (\(x, y) -> (scale x, scale y * (-1.0), 0.0, c)) pts
+  where
+    scale x = 0.9 * ((((fromIntegral x) * 2.0) / divisor) - 1.0)
+
+
+pattern OneAndThree x y <- (x, (z, y))
+
+mazeSpace = mazeGen (sz, sz) origin (cycle (randSeq))
+
+solutionPath :: Maybe [(Int, Int)]
+solutionPath = solvePath mazeSpace 
+
+
+stationaries :: InputSpace -> [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]
+stationaries is = (myPoints startColor [isOrigin is]) ++ (myPoints endColor [isGoal is]) ++ (myPoints obstacleColor $ isObstacles is)
 
 data AppState = AS {step :: Int, interval :: Timeout}
 
