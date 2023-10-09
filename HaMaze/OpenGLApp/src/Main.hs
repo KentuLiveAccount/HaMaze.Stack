@@ -13,7 +13,7 @@ import System.Random.Stateful
 import Control.Monad (replicateM)
 
 {-
-  TODO: update maze after completion (convert ob from constant to function)
+  Done: update maze after completion (convert ob from constant to function)
 -}
 
 origin :: (Int, Int)
@@ -31,7 +31,7 @@ randSeq =
         rollsM n = replicateM n . uniformRM (0, 5)
         pureGen = mkStdGen 349
     in
-        runStateGen_ pureGen (rollsM 10) :: [Int]
+        runStateGen_ pureGen (rollsM 17) :: [Int]
 
 obstacleColor :: (GLfloat,GLfloat,GLfloat)
 obstacleColor = (0, 0.5, 0.5)
@@ -63,26 +63,28 @@ myPoints c pts =  map (\(x, y) -> (scale x, scale y * (-1.0), 0.0, c)) pts
   where
     scale x = 0.9 * ((((fromIntegral x) * 2.0) / divisor) - 1.0)
 
+rotateList :: [a] -> [a]
+rotateList [] = []
+rotateList [a] = [a]
+rotateList (a:as) = as ++ [a]
 
 pattern OneAndThree x y <- (x, (z, y))
 
-mazeSpace = mazeGen (sz, sz) origin (cycle (randSeq))
+stationariesFst :: InputSpace -> [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]
+stationariesFst is = (myPoints startColor [isOrigin is]) ++ (myPoints endColor [isGoal is]) ++ (myPoints obstacleColor $ isObstacles is)
 
-solutionPath :: Maybe [(Int, Int)]
-solutionPath = solvePath mazeSpace 
+data AppState = AS {asRands :: [Int], asStep :: Int, asInterval :: Timeout, asSolutionPath :: Maybe [Point], asStationaries :: [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]}
 
-
-stationaries :: InputSpace -> [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]
-stationaries is = (myPoints startColor [isOrigin is]) ++ (myPoints endColor [isGoal is]) ++ (myPoints obstacleColor $ isObstacles is)
-
-data AppState = AS {step :: Int, interval :: Timeout}
-
-initialAppState :: AppState
-initialAppState = (AS 0 16)
+initialAppState :: [Int] -> AppState
+initialAppState rands = (AS rands'  0 16 (solvePath mazeSpace) (stationariesFst mazeSpace))
+  where
+    mazeSpace = mazeGen (sz, sz) origin (cycle (rands))
+    rands' = rotateList rands
 
 nextAppState :: AppState -> AppState
-nextAppState (AS st to) = (AS st' to)
+nextAppState (AS rands st to solutionPath stationaries) = as'
   where
+    as' = if (st' == 0) then (initialAppState rands) else (AS rands st' to solutionPath stationaries)
     st' = (st + 1) `mod` (lengthOr 5 solutionPath)
     lengthOr :: Int -> Maybe [a] -> Int
     lengthOr n Nothing = n
@@ -90,9 +92,10 @@ nextAppState (AS st to) = (AS st' to)
 
 main :: IO ()
 main = do
-  print $ myPoints (1, 0, 0) (isObstacles mazeSpace)
   (_progName, _args) <- getArgsAndInitialize
-  stateRef <- newIORef initialAppState
+  print randSeq
+  print $ rotateList randSeq
+  stateRef <- newIORef $ initialAppState randSeq
   initialDisplayMode $= [DoubleBuffered]
   _window <- createWindow "GLApp"
   displayCallback $= (display stateRef)
@@ -107,18 +110,18 @@ setColor (r, g, b) = color3f r g b
 
 display :: IORef AppState -> DisplayCallback
 display ior = do 
-  (AS dl _) <- readIORef ior
+  (AS _ dl _ solutionPath stationaries) <- readIORef ior
   clear [ColorBuffer] -- ColorBuffer :: ClearBuffer
   preservingMatrix ( do
     scale 0.8 0.8 (0.8::GLfloat)
     -- renderPrimitive :: PrimitiveMode -> IO a -> IO a
     mapM_ (\pts -> renderPrimitive Quads $ mapM_ rectVertex (myPoints pathColor (take dl pts))) solutionPath
-    renderPrimitive Quads $ mapM_ rectVertex $ stationaries mazeSpace)
+    renderPrimitive Quads $ mapM_ rectVertex $ stationaries)
   swapBuffers
 
 timerProc :: IORef AppState -> IO ()
 timerProc ior = do
-    (AS _ timeout) <- readIORef ior
+    (AS _ _ timeout _ _) <- readIORef ior
     addTimerCallback timeout $ timerProc ior
     modifyIORef ior nextAppState
     postRedisplay Nothing
