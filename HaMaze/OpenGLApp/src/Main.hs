@@ -70,16 +70,16 @@ rotateList (a:as) = as ++ [a]
 
 pattern OneAndThree x y <- (x, (z, y))
 
-stationariesFst :: InputSpace -> [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]
-stationariesFst is = (myPoints startColor [isOrigin is]) ++ (myPoints endColor [isGoal is]) ++ (myPoints obstacleColor $ isObstacles is)
+stationariesFromIS :: InputSpace -> [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]
+stationariesFromIS is = (myPoints startColor [isOrigin is]) ++ (myPoints endColor [isGoal is]) ++ (myPoints obstacleColor $ isObstacles is)
 
 data AppState = AS {asRands :: [Int], asStep :: Int, asInterval :: Timeout, asSolutionPath :: Maybe [Point], asStationaries :: [(GLfloat,GLfloat,GLfloat, (GLfloat, GLfloat, GLfloat))]}
 
 initialAppState :: [Int] -> AppState
-initialAppState rands = (AS rands'  0 16 (solvePath mazeSpace) (stationariesFst mazeSpace))
+initialAppState rands = (AS rands'  0 16 (solvePath mazeSpace) (stationariesFromIS mazeSpace))
   where
     mazeSpace = mazeGen (sz, sz) origin (cycle (rands))
-    rands' = rotateList rands
+    rands' = reverse $ rotateList rands
 
 nextAppState :: AppState -> AppState
 nextAppState (AS rands st to solutionPath stationaries) = as'
@@ -121,7 +121,7 @@ display ior = do
 
 timerProc :: IORef AppState -> IO ()
 timerProc ior = do
-    (AS _ _ timeout _ _) <- readIORef ior
+    (AS rands _ timeout _ _) <- readIORef ior
     addTimerCallback timeout $ timerProc ior
     modifyIORef ior nextAppState
     postRedisplay Nothing

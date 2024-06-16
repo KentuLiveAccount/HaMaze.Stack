@@ -39,7 +39,7 @@ neighbors (sBounds, sp, motion) (x, y) = filter (inBounds sBounds) nbs
 
 setStart :: SearchSpace -> (Int, Int) -> Maybe SearchSpace
 setStart (sBounds, sp, mvs) start
-    | sp!(coordToIdx sBounds start) /= 0 = Nothing
+    | sp!(coordToIdx sBounds start) /= 0 = Nothing -- starting point already occupied
     | otherwise = Just $ (sBounds, sp//[(coordToIdx sBounds start, 1)], mvs)
 
 zeroOrLargerThan :: Int -> Int -> Bool
